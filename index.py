@@ -6,9 +6,10 @@ import seaborn as sns
 fig1, ax1 = plt.subplots(1)
 fig2, ax2 = plt.subplots(1)
 fig3, ax3 = plt.subplots(1)
+fig4, ax4 = plt.subplots(1)
 fig1.tight_layout()
 
-sns.set_theme( style = "white")
+sns.set_theme(style = "white")
 
 #solve the second order differential equation for the soliton,
 def energy_density(x, v, t, w, r):
@@ -33,6 +34,11 @@ def Newton_Raphson(x, w, r, n):
     return x
 
 def ODE(x, v, t, w, r):
+    t_s = 10
+    if t<t_s: 
+        r = 0.9
+    else: 
+        r = 0
     return -2*v/t + potential_derivative(x, w, r)
 
 def RK_22(x0, t0, v0, t_range, x_range, E, r):
@@ -72,6 +78,20 @@ def IntBisec(a_u, a_o, E, r, N):
             a_o = np.float128(amid)
     return amid
 
+
+def analytical_approx(t, t_s, r_s): 
+    array = np.zeros(len(t))
+
+    for i in range(len(t)):
+        if t[i] < t_s: 
+            C = (1/t_s)*(1/np.cosh(np.sqrt(r_s)*t_s))
+            array[i] = C*(t_s/t[i])*np.sinh(np.sqrt(r_s)*t[i])
+        else: 
+            K = -(1-(1/(t_s*np.sqrt(r_s))*np.tanh(np.sqrt(r_s)*t_s)))
+            array[i] = K*(t_s/t[i])*np.exp(-np.sqrt(2)*(t[i]-t_s))+1
+
+    return array
+
 # Fundamental values we require:
 N = 1
 E = np.linspace(0, 0.09, N)
@@ -80,7 +100,7 @@ r = 0
 # Initial conditions for the Runge-Kutta algorithm.
 t0 = 1e-15
 v0 = 0
-dt = 0.01
+dt = 0.001
 t_range = 50
 
 S_Euclidean = []
@@ -109,9 +129,9 @@ for i in range(N):
             break
         
     
-    t_cut = t[:3500]
-    x_cut = x[:3500]
-    v_cut = v[:3500]
+    t_cut = t[:30000]
+    x_cut = x[:30000]
+    v_cut = v[:30000]
     
     # Finding the index of intersection:
     #for k in np.arange(0, len(x) - 1):
@@ -124,9 +144,13 @@ for i in range(N):
         
     dE_dr = energy_density(x_cut, v_cut, t_cut, E[i], r)
     
-    ax1.plot(t_cut, x_cut, label="$\epsilon$ = " + str(np.round(E[i], 3))+"$\lambda$")
-    ax2.plot(t_cut, dE_dr,  label="$\epsilon$ = " + str(np.round(E[i], 3))+"$\lambda$")
+    ax1.plot(t_cut, x_cut, color="orange", label="numerical")
+    ax1.plot(t_cut, -x_cut, color="orange")
+    ax1.plot(t_cut, analytical_approx(t_cut, 10, 0.9), linestyle="--", color="k", label="analytical")
+    ax1.plot(t_cut, -analytical_approx(t_cut, 10, 0.9), linestyle="--", color="k")
     
+    ax2.plot(t_cut, dE_dr,  label="$\epsilon$ = " + str(np.round(E[i], 3))+"$\lambda$")
+    ax4.plot(x_cut, (1/2)*v_cut**2)
     energy = simpson(dE_dr, dx=0.01)
     S_Euclidean.append(energy)
     
@@ -153,7 +177,7 @@ else:
 
 s=11
 ax1.set_ylim(-1.1, 1.1)
-#ax1.set_xlim(0, 30)
+ax1.set_xlim(0, 30)
 ax1.tick_params(axis='both', which='major', labelsize=s)
 ax1.set_title(r"Kinks with several values of $\epsilon$ ( $\rho$ = " + density_title + ' )')
 ax1.set_xlabel('$\sqrt{\lambda}\eta$r', size=20)
@@ -164,7 +188,6 @@ ax2.set_xlabel('$\sqrt{\lambda}\eta$x', size=20)
 ax2.set_ylabel(r'Energy density/$\sqrt{\lambda}\eta^3$', size=20)
 ax2.set_ylim(0, 0.51)
 
-
 ax3.set_title("Energy of the kinks vs. $\epsilon$")
 ax3.set_ylabel("$E_{min}/\sqrt{\lambda}\eta^3$", size=20)
 ax3.set_xlabel("$\epsilon/\lambda $", size = 20)
@@ -172,7 +195,6 @@ ax3.set_xlabel("$\epsilon/\lambda $", size = 20)
 ax1.legend(loc='center right', fontsize=s)
 ax2.legend(loc='center right', fontsize=s)
 ax3.legend(loc='upper right', fontsize=s)
-
 
 #always have this: 
 plt.show()
