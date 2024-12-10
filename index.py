@@ -105,9 +105,13 @@ def analytical_approx(t, t_s, r_s, w):
 
     return array
 
+def bubble_radius(w):
+    r = np.linspace(0, 0.99, 1000)
+    ax4.plot(r, (1/w)*(1-r)**(-3/2))
+
 # Fundamental values we require:
 N = 1
-E = np.linspace(0.0, 0.09, N)
+E = np.linspace(0.01, 0.09, N)
 r = 0
 
 # Initial conditions for the Runge-Kutta algorithm.
@@ -121,11 +125,10 @@ S_Euclidean = []
 for i in range(N):    
     x_range = 2    
     a_u = np.float128(+0.1)
-    a_o = np.float128(Newton_Raphson(-0.9, E[i], r, 1))
+    a_o = np.float128(Newton_Raphson(0.9, E[i], r, 1))
     phi_0 = np.float128(Newton_Raphson(1, E[i], r, 20))
     
     a_mid = IntBisec(a_u, a_o, E[i], r, 100)
-    
     phi_mid = RK_22(a_mid, t0, v0, t_range, x_range, E[i], r)
     x_pot = np.linspace(-1.5,1.5,100)
 
@@ -147,7 +150,7 @@ for i in range(N):
     dE_dr = energy_density(x_cut, v_cut, t_cut, E[i], r)
     
     ax1.plot(t_cut, 
-             -x_cut, 
+             x_cut, 
              color="orange", 
              label="numerical")
     
@@ -159,16 +162,20 @@ for i in range(N):
     ax1.axhline(phi_0, 
                 linestyle="-.", 
                 color="r", 
-                label= "$\phi_0$")
+                label= "$\phi_f$")
     
     ax2.plot(t_cut, 
              dE_dr,  
              label="$\epsilon$ = " + str(np.round(E[i], 3))+"$\lambda$")
     
-    ax4.plot(x_cut, 
-             potential(x_cut,E[i],r))
+    #ax4.plot(x_cut, 
+    #          potential(x_cut,E[i],r))
     energy = simpson(dE_dr, dx=0.01)
     S_Euclidean.append(energy)
+
+    bubble_radius(E[i])
+
+
     
 def Z(E): 
     return E**(1/4)
@@ -199,14 +206,14 @@ else:
     density_title = str(r) + "$\mu^2M^2$"
 
 s=11
-ax1.set_ylim(0.90, 1.025)
+ax1.set_ylim(0.94, 1.025)
 ax1.set_xlim(0, 3)
 ax1.tick_params(axis='both', 
                 which='major', 
                 labelsize=s)
 
 #ax1.set_title(r"Kinks with several values of $\epsilon$ ( $\rho$ = " + density_title + ' )')
-ax1.set_title(r"Background field with $\rho_s = $" + str(10) + '$\mu^2M^2$ and $r_s = $' + str(0.1) +"$\lambda_0$")
+ax1.set_title(r"Background field with $\epsilon$ = " + str(np.round(E[i], 3))+ r"$\lambda, \rho_s = $" + str(10) + r'$\mu^2M^2$ and $r_s = $' + str(0.1) + r"$\lambda_0$")
 ax1.set_xlabel('$r/\lambda_0$', 
                size=20)
 
@@ -233,8 +240,17 @@ ax2.legend(loc='center right',
 ax3.legend(loc='upper right', 
            fontsize=s)
 
-ax4.set_xlabel("$phi_0$")
-ax4.set_ylabel("$\dot{phi}$")
+ax4.axvline(1, color="mediumvioletred", linestyle="dashed")
+ax4.set_xlabel("$ρ/ρ_*$")
+ax4.set_ylabel("$R/\lambda_0$")
+#ax4.set_ylim(-0.1, 100000)
+ax4.set_xlim(0, 1.01)
+ax4.tick_params(axis='both', 
+                which='major', 
+                labelsize=s)
+
+#ax4.set_xlabel("$phi_0$")
+#ax4.set_ylabel("$\dot{phi}$")
 
 #always have this: 
 plt.show()
